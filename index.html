@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>边境走私大亨 · 豪华版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            color: #eee;
+            font-family: 'Microsoft YaHei', monospace;
+            min-height: 100vh;
+            padding: 5px;
+            font-size: 13px;
+            overflow-x: hidden;
+        }
+
+        /* ===== 屏幕闪光效果 ===== */
+        #screenFlash {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+            opacity: 0; transition: opacity 0.1s;
+        }
+        #screenFlash.flash-positive { background: rgba(76,175,80,0.25); }
+        #screenFlash.flash-negative { background: rgba(255,68,68,0.25); }
+        #screenFlash.flash-special  { background: rgba(156,39,176,0.3); }
+
+        /* ===== 飘字效果 ===== */
+        .float-text {
+            position: fixed;
+            font-size: 16px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 9998;
+            animation: floatUp 1.4s ease-out forwards;
+            text-shadow: 0 0 6px rgba(0,0,0,0.8);
+        }
+        @keyframes floatUp {
+            0%   { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-80px); opacity: 0; }
+        }
+
+        /* ===== 成就弹出 ===== */
+        #achievementPopup {
+            position: fixed; top: 60px; right: 10px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 12px 16px;
+            max-width: 260px;
+            z-index: 9997;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(255,215,0,0.4);
+        }
+        #achievementPopup.show { transform: translateX(0); }
+        #achievementPopup .ach-title { color: #ffd700; font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+        #achievementPopup .ach-name  { color: #fff; font-size: 14px; font-weight: bold; }
+        #achievementPopup .ach-desc  { color: #aaa; font-size: 10px; margin-top: 3px; }
+
+        /* ===== 财富称号 ===== */
+        .wealth-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        /* ===== 游戏容器 ===== */
+        .game-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        .header {
+            background: #2d2d2d;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 3px solid #ff4444;
+        }
+        .header h1 { color: #ff4444; font-size: 18px; margin-bottom: 4px; }
+        .header .subtitle { font-size: 11px; color: #888; margin-bottom: 8px; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        .stat-box {
+            background: #1a1a1a;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+        .stat-box:hover { border-color: #666; }
+        .stat-label { font-size: 10px; color: #888; }
+        .stat-value { font-size: 12px; font-weight: bold; }
+        .money   { color: #ffd700; }
+        .health  { color: #ff4444; }
+        .energy  { color: #4fbdba; }
+        .army    { color: #4CAF50; }
+        .location{ color: #ff9800; }
+
+        .main-content { padding: 10px; }
+
+        .location-display {
+            background: #2d2d2d;
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 14px;
+            color: #ff9800;
+            border: 2px solid #ff9800;
+            font-weight: bold;
+        }
+
+        /* ===== 状态栏(进度条平滑) ===== */
+        .status-bar { display: flex; gap: 5px; margin-bottom: 10px; }
+        .status-item {
+            background: #0f0f0f;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            border: 1px solid #333;
+            flex: 1;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 3px;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 3px;
+        }
+        .health-bar { background: linear-gradient(90deg, #ff4444, #ff6666); }
+        .energy-bar { background: linear-gradient(90deg, #4fbdba, #7de8e6); }
+
+        /* ===== 事件日志 ===== */
+        .event-log {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 11px;
+        }
+        .event-item {
+            padding: 4px 6px;
+            margin-bottom: 4px;
+            border-left: 3px solid #666;
+            background: #1a1a1a;
+            border-radius: 0 4px 4px 0;
+            line-height: 1.4;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .event-item.negative { border-left-color: #ff4444; color: #ff6666; }
+        .event-item.positive { border-left-color: #4CAF50; color: #66bb6a; }
+        .event-item.neutral  { border-left-color: #ff9800; color: #ffb74d; }
+        .event-item.special  { border-left-color: #9c27b0; color: #ce93d8; }
+        .event-item.system   { border-left-color: #4444ff; color: #aaaaff; }
+        .event-item.chain    { border-left-color: #ff6600; color: #ffaa44; background: #1a1000; }
+        .event-item.achieve  { border-left-color: #ffd700; color: #ffe066; background: #1a1500; }
+
+        /* ===== 区块 ===== */
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .section h3 {
+            color: #4fbdba;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+            font-size: 13px;
+        }
+
+        .actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+
+        /* ===== 按钮 ===== */
+        button {
+            background: #2d2d2d;
+            color: #eee;
+            border: 1px solid #555;
+            padding: 6px 3px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            transition: all 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            transform: translate(-50%,-50%);
+            transition: width 0.3s, height 0.3s;
+        }
+        button:active::after { width: 120px; height: 120px; }
+        button:hover { background: #3d3d3d; border-color: #777; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+        button.danger  { background: #4a1515; border-color: #ff4444; color: #ffaaaa; }
+        button.primary { background: #1a3a3a; border-color: #4fbdba; color: #4fbdba; }
+        button.gold    { background: #3a3a1a; border-color: #ffd700; color: #ffd700; }
+        button.save    { background: #1a1a3a; border-color: #4444ff; color: #aaaaff; }
+        button.city-btn{ background: #2a1a0a; border-color: #ff9800; color: #ffcc80; }
+        button.army    { background: #2a4a2a; border-color: #4CAF50; color: #a5d6a5; }
+        button.skill   { background: #4a2a4a; border-color: #9c27b0; color: #ce93d8; }
+        button.bank    { background: #2a4a4a; border-color: #00bcd4; color: #80deea; }
+        button.npc-btn { background: #1a2a3a; border-color: #64b5f6; color: #90caf9; }
+        button.negotiate{ background: #3a2a1a; border-color: #ff9800; color: #ffcc80; }
+
+        /* ===== 黑市 ===== */
+        .market-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .market-item {
+            background: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 6px;
+            transition: border-color 0.2s;
+        }
+        .market-item:hover { border-color: #555; }
+        .market-item.illegal { border-color: #ff4444; background: #1a0a0a; }
+        .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .item-name   { font-weight: bold; font-size: 12px; }
+        .illegal-tag { background: #ff4444; color: #fff; padding: 1px 3px; border-radius: 2px; font-size: 9px; }
+        .price-row   { display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 4px; color: #aaa; }
+        .buy-price   { color: #ff6666; }
+        .sell-price  { color: #66bb6a; }
+        .item-controls { display: flex; gap: 4px; align-items: center; }
+
+        input, select, textarea {
+            background: #0f0f0f;
+            border: 1px solid #555;
+            color: #eee;
+            padding: 4px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        input[type="number"] { width: 45px; text-align: center; }
+        input[type="text"]   { width: 100%; }
+        select   { width: 100%; }
+        textarea { width: 100%; height: 60px; resize: none; font-family: monospace; }
+
+        /* ===== 背包 ===== */
+        .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .inv-item {
+            background: #0f0f0f;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 5px;
+            text-align: center;
+            font-size: 10px;
+            transition: border-color 0.2s;
+        }
+        .inv-item:hover { border-color: #666; }
+        .inv-item.illegal { border-color: #ff4444; background: #2a1515; }
+        .inv-qty { font-size: 13px; font-weight: bold; color: #4fbdba; margin: 3px 0; }
+        .inv-actions { display: flex; gap: 2px; justify-content: center; }
+        .inv-actions button { font-size: 8px; padding: 2px; flex: 1; }
+
+        /* ===== 网格类 ===== */
+        .shop-grid, .skill-grid, .faction-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .shop-item, .skill-item, .faction-item {
+            background: #0f0f0f;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* ===== 模态框 ===== */
+        .modal {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a1a1a;
+            border: 2px solid #ff4444;
+            border-radius: 8px;
+            padding: 12px;
+            max-width: 380px;
+            width: 92%;
+            max-height: 88vh;
+            overflow-y: auto;
+            animation: popIn 0.25s ease;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .modal h2 { color: #ff4444; margin-bottom: 10px; text-align: center; font-size: 14px; }
+        .modal-buttons { display: flex; gap: 5px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+
+        /* ===== BTC ===== */
+        .btc-info {
+            background: #0f0f0f; padding: 6px; border-radius: 4px;
+            margin-bottom: 8px; font-family: monospace;
+            border: 1px solid #ffd700; font-size: 11px;
+        }
+        .warning { color: #ff4444; font-size: 9px; margin-top: 3px; }
+        .leverage-selector { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+        .leverage-selector label { color: #ffd700; font-size: 11px; }
+        .leverage-selector select { flex: 1; background: #0f0f0f; border-color: #ffd700; color: #ffd700; font-weight: bold; }
+
+        .hidden { display: none; }
+
+        /* ===== 彩票 ===== */
+        .lottery-info { background: #0f0f0f; border: 1px solid #ffd700; border-radius: 4px; padding: 6px; margin-bottom: 10px; font-size: 10px; }
+        .prize-special { color: #ff00ff; font-weight: bold; }
+        .prize-1 { color: #ff4444; }
+        .prize-2 { color: #ff9800; }
+        .prize-3 { color: #4fbdba; }
+
+        /* ===== 存档 ===== */
+        .save-section { background: #0f0f0f; border: 1px solid #4444ff; margin-top: 8px; padding: 8px; border-radius: 4px; }
+        .save-section h4 { color: #aaaaff; font-size: 11px; margin-bottom: 6px; }
+        .save-buttons { display: flex; gap: 5px; }
+        .save-buttons button { flex: 1; font-size: 10px; }
+
+        /* ===== 投资 ===== */
+        .investment-grid { display: grid; grid-template-columns: 1fr; gap: 6px; max-height: 300px; overflow-y: auto; }
+        .investment-item { background: #0f0f0f; border: 1px solid #ffd700; border-radius: 4px; padding: 6px; }
+        .investment-header { display: flex; justify-content: space-between; font-weight: bold; color: #ffd700; }
+        .investment-detail { display: flex; justify-content: space-between; font-size: 10px; margin: 4px 0; }
+        .investment-controls { display: flex; gap: 4px; align-items: center; }
+
+        /* ===== 新手引导 ===== */
+        .guide-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            pointer-events: none;
+        }
+        .guide-box {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid #ffd700;
+            border-radius: 10px; padding: 20px;
+            max-width: 300px; text-align: center;
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
+        }
+        .guide-box h3 { color: #ffd700; margin-bottom: 10px; }
+        .guide-box p  { color: #ccc; font-size: 12px; line-height: 1.6; }
+        .guide-box button { margin-top: 12px; padding: 6px 20px; }
+
+        /* ===== NPC卡片 ===== */
+        .npc-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .npc-card {
+            background: #0f0f0f;
+            border: 1px solid #64b5f6;
+            border-radius: 6px; padding: 8px;
+        }
+        .npc-card .npc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .npc-card .npc-name  { font-weight: bold; color: #90caf9; font-size: 13px; }
+        .npc-card .npc-city  { font-size: 10px; color: #888; }
+        .npc-card .npc-rel   { font-size: 11px; color: #ffd700; }
+        .npc-card .npc-desc  { font-size: 10px; color: #aaa; margin-bottom: 6px; }
+        .rel-bar { width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+        .rel-fill { height: 100%; background: linear-gradient(90deg, #64b5f6, #42a5f5); transition: width 0.5s; }
+
+        /* ===== 成就面板 ===== */
+        .achievement-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 350px; overflow-y: auto; }
+        .ach-card {
+            background: #0f0f0f; border-radius: 6px; padding: 8px;
+            border: 1px solid #555; text-align: center;
+        }
+        .ach-card.unlocked { border-color: #ffd700; background: #1a1500; }
+        .ach-card .ach-icon { font-size: 22px; }
+        .ach-card .ach-nm   { font-size: 11px; font-weight: bold; color: #eee; margin-top: 4px; }
+        .ach-card .ach-dc   { font-size: 9px; color: #888; margin-top: 2px; }
+        .ach-card.unlocked .ach-nm { color: #ffd700; }
+
+        /* ===== 事件链提示 ===== */
+        .chain-indicator {
+            background: linear-gradient(90deg, #ff6600, #ff9800);
+            color: #fff; font-size: 10px; font-weight: bold;
+            padding: 4px 8px; border-radius: 4px;
+            margin-bottom: 8px; text-align: center;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity: 1; }
+            50%      { opacity: 0.7; }
+        }
+
+        /* ===== 边境检查小游戏 ===== */
+        .border-game { text-align: center; padding: 10px 0; }
+        .border-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+        .border-choice {
+            background: #0f0f0f; border: 2px solid #555;
+            border-radius: 8px; padding: 10px;
+            cursor: pointer; transition: all 0.2s; font-size: 12px;
+        }
+        .border-choice:hover { border-color: #ffd700; background: #1a1500; }
+
+        /* ===== 情报市场 ===== */
+        .intel-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .intel-item { background: #0f0f0f; border: 1px solid #9c27b0; border-radius: 4px; padding: 8px; }
+        .intel-item .intel-city { color: #ce93d8; font-weight: bold; font-size: 12px; margin-bottom: 4px; }
+        .intel-item .intel-desc { font-size: 10px; color: #aaa; margin-bottom: 6px; }
+
+        /* ===== 谈判区域 ===== */
+        .negotiate-section { background: #1a1000; border: 1px solid #ff9800; border-radius: 4px; padding: 8px; margin-top: 8px; }
+        .negotiate-section h4 { color: #ff9800; font-size: 11px; margin-bottom: 6px; }
+
+        /* ===== 统计面板 ===== */
+        .stats-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .stats-row { background: #0f0f0f; border-radius: 4px; padding: 6px; font-size: 10px; }
+        .stats-row .label { color: #888; }
+        .stats-row .val   { color: #4fbdba; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div id="screenFlash"></div>
+<div id="achievementPopup">
+    <div class="ach-title">🏆 成就解锁！</div>
+    <div class="ach-name" id="achPopupName"></div>
+    <div class="ach-desc" id="achPopupDesc"></div>
+</div>
+
+<div class="game-container">
+    <div class="header">
+        <h1>🌏 边境走私大亨 · 豪华版</h1>
+        <div class="subtitle" id="wealthTitle">正在加载...</div>
+        <div class="stats">
+            <div class="stat-box"><div class="stat-label">💰 资金</div><div class="stat-value money" id="money">0</div></div>
+            <div class="stat-box"><div class="stat-label">❤️ 生命</div><div class="stat-value health" id="health">0/0</div></div>
+            <div class="stat-box"><div class="stat-label">⚡ 体力</div><div class="stat-value energy" id="energy">0/0</div></div>
+            <div class="stat-box"><div class="stat-label">🪖 军队</div><div class="stat-value army" id="army">0</div></div>
+            <div class="stat-box"><div class="stat-label">📍 位置</div><div class="stat-value location" id="location">-</div></div>
+            <div class="stat-box"><div class="stat-label">📈 BTC</div><div class="stat-value" style="color:#ffd700" id="btcPrice">0</div></div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="location-display" id="locationDisplay">📍 加载中...</div>
+
+        <div id="chainBanner" class="chain-indicator hidden"></div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                生命: <span id="healthText">0/0</span>
+                <div class="progress-bar"><div class="progress-fill health-bar" id="healthBar" style="width:0%"></div></div>
+            </div>
+            <div class="status-item">
+                体力: <span id="energyText">0/0</span> <span style="color:#666;font-size:9px;" id="regenInfo">(30s+1)</span>
+                <div class="progress-bar"><div class="progress-fill energy-bar" id="energyBar" style="width:0%"></div></div>
+            </div>
+        </div>
+
+        <div class="event-log" id="eventLog">
+            <div class="event-item system">🚀 豪华版启动！新增：飘字特效、成就系统、NPC关系、事件链、边境小游戏、情报市场、谈判系统…</div>
+        </div>
+
+        <div class="section">
+            <h3>🎮 核心操作 | 💾 存档</h3>
+            <div class="actions">
+                <button class="primary" onclick="nextStep()">⏭️ 下一步</button>
+                <button class="gold" onclick="openShop()">🏪 商店</button>
+                <button onclick="toggleMarket()">📊 黑市</button>
+                <button onclick="openTravel()">🚀 切换城市</button>
+                <button onclick="openBTC()">📈 BTC</button>
+                <button onclick="openLottery()">🎰 彩票</button>
+                <button class="army" onclick="openMilitary()">⚔️ 军事行动</button>
+                <button class="gold" onclick="openInvestment()">📉 投资</button>
+                <button class="skill" onclick="openSkills()">📚 技能树</button>
+                <button class="bank" onclick="openBank()">🏦 银行</button>
+                <button class="npc-btn" onclick="openNPC()">👤 NPC</button>
+                <button onclick="openMissions()">📜 任务</button>
+                <button onclick="openAchievements()">🏆 成就</button>
+                <button onclick="openIntel()">🔍 情报</button>
+                <button onclick="openFactions()">🤝 势力</button>
+                <button onclick="openStats()">📊 统计</button>
+            </div>
+            <div class="save-section">
+                <h4>💾 进度管理</h4>
+                <div class="save-buttons">
+                    <button class="save" onclick="exportSave()">📤 导出存档</button>
+                    <button class="save" onclick="importSave()">📥 导入存档</button>
+                    <button class="danger" onclick="resetGame()">🔄 重置</button>
+                </div>
+                <p style="font-size:9px;color:#666;margin-top:4px;">自动保存每5分钟</p>
+            </div>
+        </div>
+
+        <div class="section hidden" id="marketSection">
+            <h3>🏪 黑市 - <span id="marketLocation">-</span></h3>
+            <div class="market-grid" id="marketList"></div>
+        </div>
+
+        <div class="section">
+            <h3>🎒 背包</h3>
+            <div class="inventory-grid" id="inventoryList"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 模态框 ========== -->
+
+<!-- 存档 -->
+<div class="modal" id="saveModal">
+    <div class="modal-content">
+        <h2>💾 存档管理</h2>
+        <div id="saveContent" style="margin-bottom:10px;">
+            <p style="font-size:11px;color:#aaa;margin-bottom:8px;">复制下方代码保存：</p>
+            <textarea id="saveData" readonly></textarea>
+        </div>
+        <div id="importContent" class="hidden">
+            <p style="font-size:11px;color:#aaa;margin-bottom:8px;">粘贴存档代码：</p>
+            <textarea id="importData"></textarea>
+        </div>
+        <div class="modal-buttons">
+            <button onclick="copySave()" id="copyBtn">📋 复制</button>
+            <button onclick="doImport()" id="importBtn" class="hidden">✅ 确认</button>
+            <button onclick="closeModal('saveModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 商店 -->
+<div class="modal" id="shopModal">
+    <div class="modal-content">
+        <h2>🏪 商店</h2>
+        <div class="shop-grid" id="shopList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('shopModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 旅行 -->
+<div class="modal" id="travelModal">
+    <div class="modal-content">
+        <h2>🚀 切换城市</h2>
+        <p style="font-size:10px;color:#888;margin-bottom:8px;">消耗1体力，可能触发边境检查</p>
+        <div class="actions" id="travelList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('travelModal')">取消</button></div>
+    </div>
+</div>
+
+<!-- 边境检查小游戏 -->
+<div class="modal" id="borderModal">
+    <div class="modal-content">
+        <h2>🚔 边境检查！</h2>
+        <div class="border-game">
+            <p id="borderQuestion" style="font-size:13px;margin-bottom:5px;"></p>
+            <p style="font-size:10px;color:#888;" id="borderHint"></p>
+            <div class="border-choices" id="borderChoices"></div>
+        </div>
+    </div>
+</div>
+
+<!-- BTC -->
+<div class="modal" id="btcModal">
+    <div class="modal-content">
+        <h2>📈 BTC合约</h2>
+        <div class="btc-info">
+            <div>价格: <span id="btcCurrentPrice">0</span> U</div>
+            <div>资金: <span id="btcMoney">0</span> U</div>
+            <div style="margin-top:5px;"><input type="number" id="btcAmount" placeholder="投入金额" style="width:100%;"></div>
+            <div class="leverage-selector">
+                <label>杠杆:</label>
+                <select id="btcLeverage">
+                    <option value="5">5倍</option><option value="10">10倍</option>
+                    <option value="20">20倍</option><option value="50">50倍</option>
+                    <option value="100">100倍</option><option value="1000">1000倍</option>
+                    <option value="10000">10000倍</option>
+                </select>
+            </div>
+            <div class="warning">⚠️ 爆仓只损失本金</div>
+        </div>
+        <div class="modal-buttons">
+            <button class="primary" onclick="tradeBTC('long')">📈 做多</button>
+            <button class="danger" onclick="tradeBTC('short')">📉 做空</button>
+            <button onclick="closeModal('btcModal')">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 彩票 -->
+<div class="modal" id="lotteryModal">
+    <div class="modal-content">
+        <h2>🎰 彩票</h2>
+        <div class="lottery-info">
+            <div class="prize-special">🏆 特等奖: 15亿 (0.01%)</div>
+            <div class="prize-1">🥇 一等奖: 1500万 (0.1%)</div>
+            <div class="prize-2">🥈 二等奖: 500万 (1%)</div>
+            <div class="prize-3">🥉 三等奖: 50万 (3%)</div>
+            <div style="color:#888;">💨 未中奖: 50%</div>
+            <div style="color:#ffd700;margin-top:5px;">票价: 1000 U</div>
+        </div>
+        <div class="modal-buttons">
+            <button class="gold" onclick="playLottery()">🎫 购买</button>
+            <button onclick="closeModal('lotteryModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 出售 -->
+<div class="modal" id="sellModal">
+    <div class="modal-content">
+        <h2>💰 出售</h2>
+        <p id="sellInfo" style="font-size:11px;margin-bottom:8px;"></p>
+        <input type="number" id="sellQuantity" min="1" style="width:100%;margin-bottom:8px;">
+        <div class="negotiate-section">
+            <h4>🤝 谈判（消耗5体力，有概率提升售价10-30%）</h4>
+            <div class="modal-buttons" style="margin-top:6px;">
+                <button class="negotiate" onclick="negotiateSell()">💬 开始谈判</button>
+            </div>
+            <p id="negotiateResult" style="font-size:10px;color:#ffd700;margin-top:4px;"></p>
+        </div>
+        <div class="modal-buttons">
+            <button onclick="document.getElementById('sellQuantity').value=document.getElementById('sellQuantity').max">全部</button>
+            <button onclick="confirmSell()">确认出售</button>
+            <button class="danger" onclick="closeModal('sellModal')">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 军事行动 -->
+<div class="modal" id="militaryModal">
+    <div class="modal-content">
+        <h2>⚔️ 军事行动</h2>
+        <div style="margin-bottom:10px;font-size:11px;">当前军队: <span id="militaryArmy">0</span></div>
+        <div class="actions" id="militaryActions"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('militaryModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 投资 -->
+<div class="modal" id="investmentModal">
+    <div class="modal-content">
+        <h2>📈 投资市场</h2>
+        <div style="margin-bottom:8px;font-size:11px;">每次"下一步"产生分红 · 持有越多回报率越高</div>
+        <div class="investment-grid" id="investmentList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('investmentModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 技能树 -->
+<div class="modal" id="skillsModal">
+    <div class="modal-content">
+        <h2>📚 技能树</h2>
+        <div id="skillComboHint" style="font-size:10px;color:#ce93d8;margin-bottom:8px;"></div>
+        <div class="skill-grid" id="skillsList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('skillsModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 银行 -->
+<div class="modal" id="bankModal">
+    <div class="modal-content">
+        <h2>🏦 银行</h2>
+        <p id="bankInfo" style="margin-bottom:10px;font-size:11px;"></p>
+        <div class="modal-buttons">
+            <button class="bank" onclick="bankLoan()">贷款</button>
+            <button class="bank" onclick="bankRepay()">还款</button>
+            <button class="danger" onclick="closeModal('bankModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- 势力 -->
+<div class="modal" id="factionsModal">
+    <div class="modal-content">
+        <h2>🤝 势力关系</h2>
+        <p id="factionsInfo" style="margin-bottom:10px;font-size:11px;"></p>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('factionsModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 任务 -->
+<div class="modal" id="missionsModal">
+    <div class="modal-content">
+        <h2>📜 主线任务</h2>
+        <div id="missionsInfo" style="margin-bottom:10px;font-size:11px;"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('missionsModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- NPC -->
+<div class="modal" id="npcModal">
+    <div class="modal-content">
+        <h2>👤 NPC关系</h2>
+        <p style="font-size:10px;color:#888;margin-bottom:8px;">与NPC互动可获得特殊奖励，好感度越高越划算</p>
+        <div class="npc-grid" id="npcList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('npcModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 成就 -->
+<div class="modal" id="achievementsModal">
+    <div class="modal-content">
+        <h2>🏆 成就系统</h2>
+        <p style="font-size:10px;color:#888;margin-bottom:8px;" id="achProgress"></p>
+        <div class="achievement-grid" id="achievementList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('achievementsModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 情报 -->
+<div class="modal" id="intelModal">
+    <div class="modal-content">
+        <h2>🔍 情报市场</h2>
+        <p style="font-size:10px;color:#888;margin-bottom:8px;">购买情报预览其他城市的物价，把握套利机会</p>
+        <div class="intel-grid" id="intelList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('intelModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 统计 -->
+<div class="modal" id="statsModal">
+    <div class="modal-content">
+        <h2>📊 生涯统计</h2>
+        <div class="stats-detail" id="statsList"></div>
+        <div class="modal-buttons"><button class="danger" onclick="closeModal('statsModal')">关闭</button></div>
+    </div>
+</div>
+
+<!-- 新手引导 -->
+<div id="guideOverlay" class="guide-overlay" style="display:none;">
+    <div class="guide-box">
+        <h3>🚀 欢迎，走私大亨！</h3>
+        <p style="margin:10px 0;font-size:12px;">
+            点击"下一步"触发事件消耗体力。<br>
+            黑市买卖赚差价，投资分红，军队保护。<br>
+            新增：谈判、NPC、成就、情报、事件链！<br><br>
+            <span style="color:#ffd700;">⭐ 存档很重要！</span>
+        </p>
+        <button onclick="closeGuide()">开始游戏</button>
+    </div>
+</div>
+
+<script>
+// ==================== 全局变量 ====================
+var gameState, baseItems, cityMarkets, currentSellItem, cities, shopItems;
+var investments, npcs, achievementDefs;
+var energyTimer = null, autoSaveTimer = null;
+var skills = [], factions = [], missions = [];
+var negotiateBonus = 0; // 谈判加成
+
+// ==================== 成就定义 ====================
+function initAchievements() {
+    achievementDefs = [
+        { id: 'first_step',   icon: '👣', name: '第一步',   desc: '完成首次行动',              check: function() { return gameState.stats.steps >= 1; } },
+        { id: 'rich_10k',     icon: '💰', name: '小有积蓄', desc: '资金达到10,000U',           check: function() { return gameState.money >= 10000; } },
+        { id: 'rich_1m',      icon: '💎', name: '百万富翁', desc: '资金达到100万U',            check: function() { return gameState.money >= 1000000; } },
+        { id: 'rich_100m',    icon: '👑', name: '亿万大亨', desc: '资金达到1亿U',              check: function() { return gameState.money >= 100000000; } },
+        { id: 'army_100',     icon: '🪖', name: '小股武装', desc: '拥有100名军队',              check: function() { return gameState.army >= 100; } },
+        { id: 'army_10k',     icon: '⚔️', name: '武装割据', desc: '拥有10000名军队',           check: function() { return gameState.army >= 10000; } },
+        { id: 'travel_all',   icon: '🗺️', name: '四海为家', desc: '到访过所有城市',            check: function() { return gameState.stats.citiesVisited && Object.keys(cities).every(c => gameState.stats.citiesVisited[c]); } },
+        { id: 'lottery_win',  icon: '🎰', name: '锦鲤附体', desc: '彩票至少中一次奖',         check: function() { return gameState.stats.lotteryWins >= 1; } },
+        { id: 'trade_100',    icon: '📦', name: '贸易达人', desc: '完成100次交易',              check: function() { return gameState.stats.trades >= 100; } },
+        { id: 'npc_friend',   icon: '🤝', name: '广结善缘', desc: '与某NPC好感度达到80',       check: function() { return Object.values(gameState.npcRel).some(v => v >= 80); } },
+        { id: 'skill_master', icon: '📚', name: '技能大师', desc: '解锁10次技能',               check: function() { return gameState.skillsUnlocked.length >= 10; } },
+        { id: 'chain_3',      icon: '🔗', name: '命运之链', desc: '完成一条事件链',             check: function() { return gameState.stats.chainCompleted >= 1; } },
+        { id: 'btc_profit',   icon: '📈', name: 'BTC战神',  desc: 'BTC单次盈利超过100万',      check: function() { return gameState.stats.maxBtcProfit >= 1000000; } },
+        { id: 'negotiate_10', icon: '💬', name: '舌战群儒', desc: '成功谈判10次',               check: function() { return gameState.stats.negotiateSuccess >= 10; } },
+        { id: 'invest_rich',  icon: '📉', name: '投资大鳄', desc: '投资总市值超过1000万',      check: function() { return getTotalInvestValue() >= 10000000; } },
+        { id: 'survive_low',  icon: '💀', name: '死里逃生', desc: '生命值降至1仍存活',         check: function() { return gameState.stats.nearDeathCount >= 1; } },
+    ];
+}
+
+// ==================== NPC定义 ====================
+function initNPCs() {
+    npcs = [
+        { id: 'lao_zhang', name: '老张', city: '妙瓦底', avatar: '🧔', desc: '走私老手，能帮你压价', cost: 500, effect: function() {
+            if (gameState.npcRel.lao_zhang >= 60) {
+                var discount = 0.15;
+                addLog('老张帮你谈判，本次买入价-15%！', 'positive');
+                gameState.stats.npcBonus = (gameState.stats.npcBonus||0) + 1;
+                gameState.tempBuyDiscount = discount;
+            } else {
+                gameState.money -= 500; gameState.npcRel.lao_zhang += 10;
+                addLog('老张收了500U，好感度+10', 'neutral');
+            }
+        }},
+        { id: 'xiao_mei', name: '小梅', city: '泰国', avatar: '👩', desc: '按摩店老板，能帮你回复体力', cost: 300, effect: function() {
+            var regen = 10 + Math.floor(gameState.npcRel.xiao_mei / 10);
+            gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + regen);
+            gameState.money -= 300; gameState.npcRel.xiao_mei += 8;
+            addLog('小梅帮你按摩，体力+' + regen + '，好感度+8', 'positive');
+        }},
+        { id: 'colonel', name: '陈上校', city: '缅甸', avatar: '🎖️', desc: '军事顾问，能帮你扩军', cost: 5000, effect: function() {
+            var bonus = 5 + Math.floor(gameState.npcRel.colonel / 5);
+            gameState.army += bonus; gameState.money -= 5000;
+            gameState.npcRel.colonel += 12;
+            addLog('陈上校帮你招募' + bonus + '名士兵，好感度+12', 'positive');
+        }},
+        { id: 'dr_liu', name: '刘医生', city: '越南', avatar: '👨‍⚕️', desc: '神秘医生，能回复生命', cost: 800, effect: function() {
+            var heal = 20 + Math.floor(gameState.npcRel.dr_liu / 8);
+            gameState.health = Math.min(gameState.maxHealth, gameState.health + heal);
+            gameState.money -= 800; gameState.npcRel.dr_liu += 10;
+            addLog('刘医生为你治疗，生命+' + heal + '，好感度+10', 'positive');
+        }},
+        { id: 'intel_man', name: '情报贩', city: '柬埔寨', avatar: '🕵️', desc: '神秘情报商，随机给你内幕消息', cost: 2000, effect: function() {
+            var citiesL = Object.keys(cities);
+            var c = citiesL[Math.floor(Math.random() * citiesL.length)];
+            var items = Object.keys(cityMarkets[c] || {});
+            if (items.length > 0) {
+                var item = items[Math.floor(Math.random() * items.length)];
+                var price = cityMarkets[c][item].buy;
+                addLog('情报贩透露：' + c + '的' + item + '买入价为' + formatMoney(price) + '！', 'special');
+            }
+            gameState.money -= 2000; gameState.npcRel.intel_man += 15;
+            addLog('花费2000U购得情报，好感度+15', 'neutral');
+        }},
+    ];
+}
+
+// ==================== 初始化数据 ====================
+function initData() {
+    gameState = {
+        money: 1000, health: 100, maxHealth: 100,
+        energy: 50, maxEnergy: 50, army: 0,
+        location: '妙瓦底', btcPrice: 50000,
+        inventory: {}, marketVisible: false, investments: {},
+        loan: 0, loanInterest: 0.01, skillsUnlocked: [],
+        factionRep: { gov: 0, rebel: 0 },
+        missionProgress: 0, lastSave: Date.now(), firstTime: true,
+        achievements: [],
+        npcRel: { lao_zhang: 0, xiao_mei: 0, colonel: 0, dr_liu: 0, intel_man: 0 },
+        eventChain: null,        // 当前事件链 { steps: [], current: 0, id: '' }
+        tempBuyDiscount: 0,      // 临时买入折扣
+        tempSellBonus: 0,        // 临时卖出加成(谈判)
+        stats: {
+            steps: 0, trades: 0, lotteryWins: 0,
+            citiesVisited: { '妙瓦底': true },
+            chainCompleted: 0, maxBtcProfit: 0,
+            negotiateSuccess: 0, nearDeathCount: 0,
+            totalEarned: 0, totalSpent: 0
+        }
+    };
+
+    investments = [
+        { name: '苹果股票',   price: 150,  sector: '科技',   volatility: 0.1 },
+        { name: '特斯拉股票', price: 200,  sector: '汽车',   volatility: 0.15 },
+        { name: '黄金ETF',    price: 180,  sector: '贵金属', volatility: 0.05 },
+        { name: '房地产信托', price: 120,  sector: '地产',   volatility: 0.03 },
+        { name: '比特币矿场', price: 300,  sector: '加密货币',volatility: 0.2 },
+        { name: '边境贸易公司',price: 80,  sector: '贸易',   volatility: 0.1 },
+        { name: '军火商',     price: 250,  sector: '军工',   volatility: 0.12 },
+        { name: '医药公司',   price: 90,   sector: '医药',   volatility: 0.08 },
+        { name: '科技初创',   price: 50,   sector: '创业',   volatility: 0.25 },
+        { name: '走私船队',   price: 400,  sector: '走私',   volatility: 0.15 },
+    ];
+
+    skills = [
+        { id: 'bargain',     name: '议价大师', cost: 5000,  desc: '每层买入-5%/卖出+5%',        effect: function() { gameState.skillsUnlocked.push('bargain'); } },
+        { id: 'energy_regen',name: '体力恢复', cost: 10000, desc: '每层每次多恢复+1体力',       effect: function() { gameState.skillsUnlocked.push('energy_regen'); } },
+        { id: 'army_train',  name: '军队训练', cost: 20000, desc: '每层军事消耗-10%',            effect: function() { gameState.skillsUnlocked.push('army_train'); } },
+    ];
+
+    factions  = [{ name: '政府军', rep: 0 }, { name: '游击队', rep: 0 }];
+    missions  = [
+        { id: 1, desc: '赚到10,000 U',   goal: 10000, reward: '解锁技能点+1', check: function() { return gameState.money >= 10000; } },
+        { id: 2, desc: '招募50军队',      goal: 50,    reward: '贷款优惠',     check: function() { return gameState.army >= 50; } },
+        { id: 3, desc: '拥有3种投资',     goal: 3,     reward: '神秘商人',     check: function() { return Object.keys(gameState.investments).length >= 3; } },
+    ];
+
+    baseItems = {
+        '洋芋':  { min: 4,       max: 8,       sellBase: 6,      stock: 1183, illegal: false, use: function() { gameState.health = Math.min(gameState.maxHealth, gameState.health+5); addLog('吃洋芋，生命+5','positive'); } },
+        '药':    { buy: 2542.21, sell:2184.66,               stock: 835,  illegal: true,  use: function() { gameState.health = Math.min(gameState.maxHealth, gameState.health+30); addLog('用药物，生命+30','positive'); } },
+        '券':    { buy:184171.96,sell:155745.11,              stock: 950,  illegal: false, use: function() { var b=Math.floor(Math.random()*10000)+1000; gameState.money+=b; addLog('兑换证券，获得'+formatMoney(b),'positive'); } },
+        '猪仔':  { min: 500000,  max: 690000,  sellBase:525000, stock: 821,  illegal: true,  use: function() { gameState.army+=5; addLog('猪仔加入军队，军队+5','positive'); } },
+        '冰片':  { min: 500000,  max:1200000,  sellRatio:0.9,   stock: 1098, illegal: true,  use: function() { var g=20+Math.floor(Math.random()*20); gameState.energy=Math.min(gameState.maxEnergy,gameState.energy+g); if(Math.random()<0.3){gameState.health=Math.max(1,gameState.health-10);addLog('冰片体力+'+g+'，副作用生命-10','neutral');}else{addLog('冰片体力+'+g,'positive');} } },
+        '铜矿':  { min: 100,     max: 170,     sellBase: 120,   stock: 1247, illegal: false, use: function() { addLog('铜矿无特别用途','neutral'); } },
+        '无人机':{ buy:1399278.70,sell:1166943.29,            stock: 1116, illegal: true,  use: function() { var cl=Object.keys(cities); var rc=cl[Math.floor(Math.random()*cl.length)]; var il=Object.keys(cityMarkets[rc]||{}); if(il.length){var ri=il[Math.floor(Math.random()*il.length)]; addLog('无人机侦查：'+rc+'的'+ri+'买入价'+formatMoney(cityMarkets[rc][ri].buy),'neutral');} } },
+        '井盖':  { buy: 557.55,  sell: 439.07,                 stock: 1190, illegal: false, use: function() { if(Math.random()<0.5){gameState.money+=500;addLog('卖井盖给废品站，+500U','positive');}else{addLog('井盖太重没搬动','neutral');} } },
+        '古董':  { min: 5000,    max: 20000,   sellBase:12000,  stock: 200,  illegal: false, use: function() { addLog('古董值钱，可以卖','neutral'); } },
+    };
+
+    cityMarkets = {};
+    currentSellItem = null;
+
+    cities = {
+        '妙瓦底': { description: '东南亚灰色地带', events: [
+            { text: '接了一单外送单子，体力-5，+3000U。', effect: function(){ gameState.energy-=5; gameState.money+=3000; return 'positive'; }},
+            { text: '精聊三个月的肥猪终于爆金币了，体力-30，+2500U，被带飞了！', effect: function(){ gameState.energy-=30; gameState.money+=2500; randomTravel(); return 'special'; }},
+            { text: '偶遇小沙耶，生命体力全满！', effect: function(){ gameState.health=gameState.maxHealth; gameState.energy=gameState.maxEnergy; return 'positive'; }},
+            { text: '偶遇挚爱郎拿度，+2000U。', effect: function(){ gameState.money+=2000; return 'positive'; }},
+            { text: '进了斌斌园区辛勤工作，+50000U。', effect: function(){ gameState.money+=50000; return 'positive'; }},
+            { text: '偶遇成玦，+500000U，体力-50。', effect: function(){ gameState.money+=500000; gameState.energy=Math.max(0,gameState.energy-50); return 'positive'; }},
+            { text: '军队人数+5。', effect: function(){ gameState.army+=5; return 'positive'; }},
+            { text: '参加爱猫活动，+1500U。', effect: function(){ gameState.money+=1500; return 'positive'; }},
+            { text: '偶遇冷锋财经，炒股大赚+50000！', effect: function(){ gameState.money+=50000; return 'positive'; }},
+            { text: '被混混勒索，-500U。', effect: function(){ gameState.money=Math.max(0,gameState.money-500); return 'negative'; }},
+            { text: '搬货扭伤腰，生命-10，体力-10。', effect: function(){ gameState.health=Math.max(1,gameState.health-10); gameState.energy=Math.max(0,gameState.energy-10); return 'negative'; }},
+            { text: '遇到假币贩子，被骗-200U。', effect: function(){ gameState.money=Math.max(0,gameState.money-200); return 'negative'; }},
+            { text: '货物被雨淋湿，随机物品-10%。', effect: function(){ var items=Object.keys(gameState.inventory).filter(n=>gameState.inventory[n]>0); if(items.length>0){var r=items[Math.floor(Math.random()*items.length)]; var loss=Math.max(1,Math.floor(gameState.inventory[r]*0.1)); gameState.inventory[r]-=loss; if(gameState.inventory[r]<=0)delete gameState.inventory[r]; addLog('你的'+r+'受潮损失'+loss+'件','negative');} return 'negative'; }},
+            { text: '体力透支晕倒，生命-10，体力-50。', effect: function(){ gameState.health=Math.max(1,gameState.health-10); gameState.energy=Math.max(0,gameState.energy-50); return 'negative'; }},
+            { text: '军队发现走私机会，+2000U（需军队）。', effect: function(){ if(gameState.army>0){gameState.money+=2000; addLog('军队帮你发现商机','positive'); return 'positive';} return 'neutral'; }},
+            // 事件链触发
+            { text: '【事件链】你发现了一条神秘走私路线的线索…', effect: function(){ triggerChain('smuggle_route'); return 'chain'; }},
+        ]},
+        '柬埔寨': { description: '东南亚心脏地带', events: [
+            { text: '遇到诈骗犯，-10U。', effect: function(){ gameState.money-=10; return 'negative'; }},
+            { text: '骗取200U补助。', effect: function(){ gameState.money+=200; return 'positive'; }},
+            { text: '警察临检，花钱消灾，-500U。', effect: function(){ gameState.money-=500; return 'negative'; }},
+            { text: '同伙背叛，偷走随机物品。', effect: function(){ var items=Object.keys(gameState.inventory).filter(n=>gameState.inventory[n]>0); if(items.length>0){var r=items[Math.floor(Math.random()*items.length)]; gameState.inventory[r]=Math.max(0,gameState.inventory[r]-1); if(gameState.inventory[r]<=0)delete gameState.inventory[r]; addLog('你的'+r+'被偷了','negative');} return 'negative'; }},
+            { text: '参与地下拳赛获胜，体力-20，+1000U。', effect: function(){ gameState.energy-=20; gameState.money+=1000; return 'neutral'; }},
+            { text: '雨季道路泥泞，体力-5。', effect: function(){ gameState.energy-=5; return 'negative'; }},
+            { text: '军队镇压暴乱，+3000U（需军队）。', effect: function(){ if(gameState.army>0){gameState.money+=3000; return 'positive';} return 'neutral'; }},
+            { text: '【事件链】柬埔寨商人邀请你参与秘密合作…', effect: function(){ triggerChain('cambodia_deal'); return 'chain'; }},
+        ]},
+        '泰国': { description: '微笑之国', events: [
+            { text: '享受泰式按摩，生命+10，体力+10，-500U。', effect: function(){ if(gameState.money>=500){gameState.money-=500; gameState.health=Math.min(gameState.maxHealth,gameState.health+10); gameState.energy=Math.min(gameState.maxEnergy,gameState.energy+10); return 'positive';} return 'neutral'; }},
+            { text: '遇到好心华裔商人，+200U。', effect: function(){ gameState.money+=200; return 'positive'; }},
+            { text: '被猴子抢走钱包，-300U。', effect: function(){ gameState.money-=300; return 'negative'; }},
+            { text: '酒吧喝醉，体力-10，多了个洋芋。', effect: function(){ gameState.energy=Math.max(0,gameState.energy-10); gameState.inventory['洋芋']=(gameState.inventory['洋芋']||0)+1; addLog('喝醉多了个洋芋','neutral'); return 'neutral'; }},
+            { text: '遭遇小型地震，生命-5。', effect: function(){ gameState.health=Math.max(1,gameState.health-5); return 'negative'; }},
+            { text: '军队参与救灾，+1000U（需军队）。', effect: function(){ if(gameState.army>0){gameState.money+=1000; return 'positive';} return 'neutral'; }},
+            { text: '【事件链】遇到神秘旅行者，说有宝藏…', effect: function(){ triggerChain('treasure_hunt'); return 'chain'; }},
+        ]},
+        '老挝': { description: '内陆秘境', events: [
+            { text: '深山遇险，军队牺牲3人脱险（或生命-20）。', effect: function(){ if(gameState.army>=3){gameState.army-=3; addLog('军队牺牲3人','negative');}else{gameState.health=Math.max(1,gameState.health-20);} return 'negative'; }},
+            { text: '发现野生药材，生命+5。', effect: function(){ gameState.health=Math.min(gameState.maxHealth,gameState.health+5); return 'positive'; }},
+            { text: '当地部落热情款待，体力+5。', effect: function(){ gameState.energy=Math.min(gameState.maxEnergy,gameState.energy+5); return 'positive'; }},
+            { text: '迷路三天，体力-15，生命-5。', effect: function(){ gameState.energy=Math.max(0,gameState.energy-15); gameState.health=Math.max(1,gameState.health-5); return 'negative'; }},
+            { text: '遭遇毒蛇咬伤，生命-20。', effect: function(){ gameState.health=Math.max(1,gameState.health-20); return 'negative'; }},
+            { text: '军阀勒索，-800U。', effect: function(){ gameState.money-=800; return 'negative'; }},
+            { text: '军队挖到宝藏，+2000U（需军队）。', effect: function(){ if(gameState.army>0){gameState.money+=2000; return 'positive';} return 'neutral'; }},
+        ]},
+        '越南': { description: '东方小中华', events: [
+            { text: '吃河粉中毒，生命-5，体力-5。', effect: function(){ gameState.health=Math.max(1,gameState.health-5); gameState.energy=Math.max(0,gameState.energy-5); return 'negative'; }},
+            { text: '帮人带货，+500U。', effect: function(){ gameState.money+=500; return 'positive'; }},
+            { text: '遇到中国老乡请吃饭，生命+5。', effect: function(){ gameState.health=Math.min(gameState.maxHealth,gameState.health+5); return 'positive'; }},
+            { text: '摩托车飞车党抢包，-800U。', effect: function(){ gameState.money-=800; return 'negative'; }},
+            { text: '官员索贿，-300U。', effect: function(){ gameState.money-=300; return 'negative'; }},
+            { text: '码头罢工，随机获得10件物品。', effect: function(){ var items=Object.keys(baseItems); var r=items[Math.floor(Math.random()*items.length)]; gameState.inventory[r]=(gameState.inventory[r]||0)+10; addLog('意外获得10件'+r,'positive'); return 'positive'; }},
+            { text: '军队护送货物，+2000U（需军队）。', effect: function(){ if(gameState.army>0){gameState.money+=2000; return 'positive';} return 'neutral'; }},
+        ]},
+        '缅甸': { description: '翡翠之国', events: [
+            { text: '翡翠商人，花10000U买古董。', effect: function(){ if(gameState.money>=10000){gameState.money-=10000; gameState.inventory['古董']=(gameState.inventory['古董']||0)+1; addLog('花10000U买了古董','positive'); return 'positive';}else{addLog('钱不够','neutral'); return 'neutral';} }},
+            { text: '政府军检查，好感高则无事。', effect: function(){ if(gameState.factionRep.gov>50){addLog('政府军放行','positive'); return 'positive';}else{gameState.money-=500; addLog('被勒索500U','negative'); return 'negative';} }},
+            { text: '游击队提供情报，好感高获得物品。', effect: function(){ if(gameState.factionRep.rebel>30){var items=Object.keys(baseItems); var r=items[Math.floor(Math.random()*items.length)]; gameState.inventory[r]=(gameState.inventory[r]||0)+1; addLog('游击队送你一件'+r,'positive'); return 'positive';}else{addLog('游击队不理你','neutral'); return 'neutral';} }},
+            { text: '随机商人出现，铜矿换古董。', effect: function(){ if(gameState.inventory['铜矿']>0){gameState.inventory['铜矿']--; if(gameState.inventory['铜矿']<=0)delete gameState.inventory['铜矿']; gameState.inventory['古董']=(gameState.inventory['古董']||0)+1; addLog('商人用古董换了你的铜矿','positive'); return 'positive';}else{addLog('商人没看上你的东西','neutral'); return 'neutral';} }},
+        ]},
+    };
+
+    shopItems = [
+        { name: '+10生命',  price: 20,          effect: function(){ gameState.health=Math.min(gameState.maxHealth,gameState.health+10); }},
+        { name: '+10体力',  price: 50,          effect: function(){ gameState.energy=Math.min(gameState.maxEnergy,gameState.energy+10); }},
+        { name: '满血',     price: 200,         effect: function(){ gameState.health=gameState.maxHealth; }},
+        { name: '满体力',   price: 250,         effect: function(){ gameState.energy=gameState.maxEnergy; }},
+        { name: '+10军队',  price: 2000000,     effect: function(){ gameState.army+=10; }},
+        { name: '+100军队', price: 20000000,    effect: function(){ gameState.army+=100; }},
+        { name: '+1000军队',price: 200000000,   effect: function(){ gameState.army+=1000; }},
+        { name: '+10000军队',price:2000000000,  effect: function(){ gameState.army+=10000; }},
+    ];
+}
+
+// ==================== 事件链定义 ====================
+var chainDefs = {
+    smuggle_route: {
+        name: '神秘走私路线',
+        steps: [
+            { text: '你找到了一张破旧地图，上面标着某个边境据点…', money: 0, energy: -5, reward: null },
+            { text: '经过侦查，据点果然存在！你偷偷潜入…', money: 5000, energy: -10, reward: null },
+            { text: '【链完成】你成功打通了新走私路线，获得大量货物！', money: 50000, energy: 0, reward: { item: '古董', qty: 3 } },
+        ]
+    },
+    cambodia_deal: {
+        name: '柬埔寨秘密合作',
+        steps: [
+            { text: '商人带你见了一个神秘买家…', money: 1000, energy: -3, reward: null },
+            { text: '买家要求你带货，你答应了…', money: 0, energy: -8, reward: null },
+            { text: '【链完成】交货成功！柬埔寨商人给了你丰厚报酬！', money: 80000, energy: 0, reward: { item: '券', qty: 2 } },
+        ]
+    },
+    treasure_hunt: {
+        name: '宝藏猎人',
+        steps: [
+            { text: '你跟着旅行者来到泰国深山…', money: -2000, energy: -10, reward: null },
+            { text: '发现了一个古老洞穴！', money: 10000, energy: -5, reward: null },
+            { text: '【链完成】你挖到了传说中的宝藏！财富暴涨！', money: 200000, energy: 0, reward: { item: '古董', qty: 5 } },
+        ]
+    },
+};
+
+// ==================== 事件链系统 ====================
+function triggerChain(chainId) {
+    if (gameState.eventChain) return; // 已有链则跳过
+    gameState.eventChain = { id: chainId, current: 0 };
+    addLog('🔗 事件链触发：【' + chainDefs[chainId].name + '】下一步将推进剧情！', 'chain');
+    updateChainBanner();
+}
+
+function updateChainBanner() {
+    var banner = document.getElementById('chainBanner');
+    if (!banner) return;
+    if (gameState.eventChain) {
+        var def = chainDefs[gameState.eventChain.id];
+        var step = gameState.eventChain.current;
+        banner.textContent = '🔗 事件链进行中：【' + def.name + '】第' + (step+1) + '/' + def.steps.length + '步';
+        banner.classList.remove('hidden');
+    } else {
+        banner.classList.add('hidden');
+    }
+}
+
+function progressChain() {
+    if (!gameState.eventChain) return false;
+    var chain = gameState.eventChain;
+    var def = chainDefs[chain.id];
+    var step = def.steps[chain.current];
+    addLog('🔗 ' + step.text, 'chain');
+    if (step.money > 0) { gameState.money += step.money; showFloatText('+' + formatMoney(step.money), '#ffd700'); }
+    if (step.money < 0) { gameState.money = Math.max(0, gameState.money + step.money); }
+    if (step.energy !== 0) gameState.energy = Math.max(0, Math.min(gameState.maxEnergy, gameState.energy + step.energy));
+    if (step.reward) {
+        gameState.inventory[step.reward.item] = (gameState.inventory[step.reward.item] || 0) + step.reward.qty;
+        addLog('获得 ' + step.reward.qty + ' 件 ' + step.reward.item, 'positive');
+    }
+    chain.current++;
+    if (chain.current >= def.steps.length) {
+        gameState.stats.chainCompleted++;
+        gameState.eventChain = null;
+        addLog('🔗 事件链【' + def.name + '】已完成！', 'achieve');
+    }
+    updateChainBanner();
+    return true;
+}
+
+// ==================== 财富称号 ====================
+function getWealthTitle() {
+    var m = gameState.money;
+    if (m >= 1e10) return { text: '🌏 商业帝国', color: '#ff00ff' };
+    if (m >= 1e8)  return { text: '👑 亿万大亨', color: '#ffd700' };
+    if (m >= 1e7)  return { text: '💎 走私霸主', color: '#00e5ff' };
+    if (m >= 1e6)  return { text: '💰 百万富翁', color: '#66bb6a' };
+    if (m >= 1e5)  return { text: '📈 小有成就', color: '#4fbdba' };
+    if (m >= 1e4)  return { text: '🔪 街头混混', color: '#ff9800' };
+    return { text: '😅 一穷二白', color: '#888' };
+}
+
+// ==================== 浮动文字 ====================
+function showFloatText(text, color, x, y) {
+    var el = document.createElement('div');
+    el.className = 'float-text';
+    el.textContent = text;
+    el.style.color = color || '#ffd700';
+    el.style.left = (x || Math.random() * 60 + 20) + '%';
+    el.style.top  = (y || 40) + '%';
+    document.body.appendChild(el);
+    setTimeout(function() { el.parentNode && el.parentNode.removeChild(el); }, 1500);
+}
+
+// ==================== 屏幕闪光 ====================
+function flashScreen(type) {
+    var el = document.getElementById('screenFlash');
+    if (!el) return;
+    el.className = 'flash-' + type;
+    el.style.opacity = '1';
+    setTimeout(function() { el.style.opacity = '0'; }, 150);
+    setTimeout(function() { el.className = ''; }, 300);
+}
+
+// ==================== 成就系统 ====================
+function showAchievementPopup(def) {
+    var popup = document.getElementById('achievementPopup');
+    document.getElementById('achPopupName').textContent = def.icon + ' ' + def.name;
+    document.getElementById('achPopupDesc').textContent = def.desc;
+    popup.classList.add('show');
+    setTimeout(function() { popup.classList.remove('show'); }, 3500);
+}
+
+function checkAchievements() {
+    achievementDefs.forEach(function(def) {
+        if (!gameState.achievements.includes(def.id) && def.check()) {
+            gameState.achievements.push(def.id);
+            addLog('🏆 成就解锁：' + def.icon + def.name + ' — ' + def.desc, 'achieve');
+            showAchievementPopup(def);
+            flashScreen('special');
+        }
+    });
+}
+
+// ==================== 辅助 ====================
+function skillCount(id) {
+    if (!gameState || !gameState.skillsUnlocked) return 0;
+    return gameState.skillsUnlocked.filter(function(x){ return x===id; }).length;
+}
+
+function getTotalInvestValue() {
+    var total = 0;
+    if (!gameState || !gameState.investments) return 0;
+    Object.keys(gameState.investments).forEach(function(name) {
+        var qty = gameState.investments[name];
+        var inv = investments.find(function(i){ return i.name === name; });
+        if (inv && qty > 0) total += qty * inv.price;
+    });
+    return total;
+}
+
+function formatMoney(n) {
+    if (n === undefined || n === null || isNaN(n)) return '0';
+    if (n >= 100000000) return (n/100000000).toFixed(2) + '亿';
+    if (n >= 10000)     return (n/10000).toFixed(2) + '万';
+    return n.toFixed ? n.toFixed(2) : String(n);
+}
+
+// ==================== 生成市场 ====================
+function generateMarketData() {
+    var data = {};
+    for (var name in baseItems) {
+        var base = baseItems[name];
+        var buyPrice, sellPrice;
+        if (base.min !== undefined && base.max !== undefined) {
+            buyPrice = base.min + Math.random() * (base.max - base.min);
+            sellPrice = (name === '冰片') ? buyPrice * 0.9 * (0.95 + Math.random() * 0.1)
+                                          : base.sellBase * (0.8 + Math.random() * 0.4);
+        } else {
+            buyPrice  = base.buy  * (0.8 + Math.random() * 0.4);
+            sellPrice = base.sell * (0.8 + Math.random() * 0.4);
+        }
+        data[name] = {
+            buy:  Math.floor(buyPrice  * 100) / 100,
+            sell: Math.floor(sellPrice * 100) / 100,
+            stock: Math.floor(base.stock * (0.5 + Math.random())),
+            illegal: base.illegal, baseBuy: buyPrice
+        };
+    }
+    return data;
+}
+
+// ==================== 体力计时器 ====================
+function startEnergyTimer() {
+    if (energyTimer) clearInterval(energyTimer);
+    var regenStacks = skillCount('energy_regen');
+    var regenAmount = 1 + regenStacks;
+    energyTimer = setInterval(function() {
+        if (gameState && gameState.energy < gameState.maxEnergy) {
+            gameState.energy = Math.min(gameState.maxEnergy, gameState.energy + regenAmount);
+            updateUI();
+        }
+    }, 30000);
+    var infoEl = document.getElementById('regenInfo');
+    if (infoEl) infoEl.textContent = '(30s+' + regenAmount + ')';
+}
+function stopEnergyTimer() { if (energyTimer) { clearInterval(energyTimer); energyTimer = null; } }
+
+// ==================== 军队护盾 ====================
+function applyArmyProtection(oh, oe, om, oa) {
+    var hd = gameState.health-oh, ed = gameState.energy-oe, md = gameState.money-om, ad = gameState.army-oa;
+    if (ad < 0) {
+        if (oa>=1000000){ gameState.army=oa-ad*2; addLog('百万大军，军队不减反增','positive'); }
+        else if(oa>=100000){ gameState.army=oa-ad; addLog('十万大军势不可挡','positive'); }
+        else if(oa>=10000) { gameState.army=oa; addLog('精锐军队未受损','neutral'); }
+        else if(oa>=1000)  { gameState.army=oa; addLog('军队威慑','neutral'); }
+        else if(oa>=100)   { gameState.army=oa+ad/2; addLog('损失减半','neutral'); }
+    }
+    if(oa>=1000000){
+        if(md>0) gameState.money=om+md*1000; else if(md<0) gameState.money=om-md*1000;
+        if(hd>0) gameState.health=Math.min(gameState.maxHealth,oh+hd*1000); else if(hd<0) gameState.health=Math.min(gameState.maxHealth,oh-hd*1000);
+        if(ed>0) gameState.energy=Math.min(gameState.maxEnergy,oe+ed*1000); else if(ed<0) gameState.energy=Math.min(gameState.maxEnergy,oe-ed*1000);
+    } else if(oa>=100000){
+        if(md>0) gameState.money=om+md*10;
+        if(hd>0) gameState.health=Math.min(gameState.maxHealth,oh+hd*10);
+        if(ed>0) gameState.energy=Math.min(gameState.maxEnergy,oe+ed*10);
+    } else if(oa>=10000){
+        if(md<0){gameState.money=om-md*2; addLog('军队化险为夷','positive');}
+        if(hd<0){gameState.health=Math.min(gameState.maxHealth,oh-hd*2);}
+        if(ed<0){gameState.energy=Math.min(gameState.maxEnergy,oe-ed*2);}
+    } else if(oa>=1000){
+        if(md<0) gameState.money=om;
+        if(hd<0) gameState.health=oh;
+        if(ed<0) gameState.energy=oe;
+    } else if(oa>=100){
+        if(md<0) gameState.money=om+md/2;
+        if(hd<0) gameState.health=oh+hd/2;
+        if(ed<0) gameState.energy=oe+ed/2;
+    }
+    if(gameState.health<1){
+        if(gameState.army>0){gameState.health=1; addLog('军队救了你一命！','positive');}
+        else{addLog('你因伤势过重去世…游戏重置','negative'); resetGame(); return;}
+    }
+    if(gameState.energy<0)  gameState.energy=0;
+    if(gameState.money<0)   gameState.money=0;
+    if(gameState.army<0)    gameState.army=0;
+    gameState.energy = Math.min(gameState.energy, gameState.maxEnergy);
+    gameState.health = Math.min(gameState.health, gameState.maxHealth);
+
+    // 濒死成就
+    if (gameState.health <= 1) gameState.stats.nearDeathCount++;
+}
+
+// ==================== 调整市场价 ====================
+function adjustMarketPrice(name, type) {
+    var market = cityMarkets[gameState.location];
+    var item = market[name];
+    if (type === 'buy') {
+        item.buy  = Math.floor(item.buy  * 1.05 * 100) / 100;
+        item.sell = Math.floor(item.sell * 1.02 * 100) / 100;
+    } else {
+        item.buy  = Math.floor(item.buy  * 0.95 * 100) / 100;
+        item.sell = Math.floor(item.sell * 0.98 * 100) / 100;
+    }
+    if (item.buy  < 0.01) item.buy  = 0.01;
+    if (item.sell < 0.01) item.sell = 0.01;
+}
+
+// ==================== 任务检查 ====================
+function checkMissions() {
+    missions.forEach(function(m, i) {
+        if (gameState.missionProgress < i+1 && m.check()) {
+            gameState.missionProgress = i+1;
+            addLog('📜 完成任务：' + m.desc + ' · 奖励：' + m.reward, 'positive');
+            showFloatText('任务完成！', '#4CAF50');
+        }
+    });
+}
+
+// ==================== 核心：下一步 ====================
+function nextStep() {
+    if (gameState.energy <= 0) { addLog('体力耗尽！', 'negative'); flashScreen('negative'); return; }
+    gameState.energy--;
+    gameState.stats.steps++;
+
+    // 推进事件链
+    if (gameState.eventChain) {
+        progressChain();
+        updateUI(); renderInventory(); checkAchievements(); return;
+    }
+
+    // 投资分红（复利：持有越多利率轻微递增）
+    for (var name in gameState.investments) {
+        var qty = gameState.investments[name];
+        if (qty > 0) {
+            var inv = investments.find(function(i){ return i.name===name; });
+            if (inv) {
+                var baseRate = 0.005 + Math.random() * 0.025;
+                var bonusRate = Math.min(0.01, qty * 0.00001); // 复利奖励
+                var profit = Math.floor(qty * inv.price * (baseRate + bonusRate));
+                if (profit > 0) { gameState.money += profit; addLog(inv.name + ' 分红 +' + formatMoney(profit) + 'U', 'positive'); }
+            }
+        }
+    }
+
+    // 贷款利息
+    if (gameState.loan > 0) {
+        var interest = Math.floor(gameState.loan * 0.01);
+        gameState.money -= interest;
+        if (gameState.money < 0) gameState.money = 0;
+        addLog('贷款利息 -' + formatMoney(interest) + 'U', 'negative');
+    }
+
+    var oh = gameState.health, oe = gameState.energy, om = gameState.money, oa = gameState.army;
+    var city = cities[gameState.location];
+    var evt = city.events[Math.floor(Math.random() * city.events.length)];
+    var type = evt.effect();
+    if (type !== 'chain') addLog(evt.text, type);
+
+    // 临时折扣使用后清除
+    gameState.tempBuyDiscount = 0;
+
+    applyArmyProtection(oh, oe, om, oa);
+    checkMissions();
+    checkAchievements();
+
+    // 视觉反馈
+    if (type === 'positive' || type === 'special') flashScreen('positive');
+    else if (type === 'negative') flashScreen('negative');
+    else if (type === 'chain') flashScreen('special');
+
+    gameState.btcPrice = Math.floor(gameState.btcPrice * (0.95 + Math.random() * 0.1));
+    updateUI();
+    renderInventory();
+}
+
+// ==================== UI更新 ====================
+var _prevMoney = 0;
+function updateUI() {
+    var wt = getWealthTitle();
+    var wtEl = document.getElementById('wealthTitle');
+    if (wtEl) wtEl.innerHTML = '<span style="color:' + wt.color + ';">' + wt.text + '</span>';
+
+    // 飘字（金钱变化）
+    var delta = gameState.money - _prevMoney;
+    if (Math.abs(delta) > 50 && _prevMoney > 0) {
+        showFloatText((delta>0?'+':'')+formatMoney(delta)+'U', delta>0?'#66bb6a':'#ff6666');
+    }
+    _prevMoney = gameState.money;
+
+    document.getElementById('money').textContent = formatMoney(gameState.money);
+    document.getElementById('health').textContent = gameState.health + '/' + gameState.maxHealth;
+    document.getElementById('energy').textContent = gameState.energy + '/' + gameState.maxEnergy;
+    document.getElementById('army').textContent   = gameState.army;
+    document.getElementById('location').textContent = gameState.location;
+    document.getElementById('btcPrice').textContent = formatMoney(gameState.btcPrice);
+    document.getElementById('locationDisplay').textContent = '📍 ' + gameState.location + ' · ' + (cities[gameState.location]||{description:''}).description;
+
+    document.getElementById('healthText').textContent = gameState.health + '/' + gameState.maxHealth;
+    document.getElementById('energyText').textContent = gameState.energy + '/' + gameState.maxEnergy;
+    document.getElementById('healthBar').style.width = (gameState.health / gameState.maxHealth * 100) + '%';
+    document.getElementById('energyBar').style.width = (gameState.energy / gameState.maxEnergy * 100) + '%';
+
+    document.getElementById('btcCurrentPrice').textContent = formatMoney(gameState.btcPrice);
+    document.getElementById('btcMoney').textContent = formatMoney(gameState.money);
+
+    updateChainBanner();
+}
+
+// ==================== 黑市 ====================
+function renderMarket() {
+    var list = document.getElementById('marketList');
+    if (!list) return;
+    list.innerHTML = '';
+    var locEl = document.getElementById('marketLocation');
+    if (locEl) locEl.textContent = gameState.location;
+    var market = cityMarkets[gameState.location];
+    var bargainStacks = skillCount('bargain');
+
+    for (var name in market) {
+        var item = market[name];
+        var effectiveBuy  = Math.ceil(item.buy  * Math.max(0.01, 1 - 0.05 * bargainStacks) * 100) / 100;
+        var effectiveSell = Math.floor(item.sell * (1 + 0.05 * bargainStacks) * 100) / 100;
+        var div = document.createElement('div');
+        div.className = 'market-item' + (item.illegal ? ' illegal' : '');
+        div.innerHTML =
+            '<div class="item-header">' +
+                '<span class="item-name">' + (item.illegal?'🔴':'🟢') + ' ' + name + '</span>' +
+                (item.illegal ? '<span class="illegal-tag">违禁</span>' : '') +
+            '</div>' +
+            '<div class="price-row">' +
+                '<span class="buy-price">买:' + formatMoney(effectiveBuy) + '</span>' +
+                '<span style="color:#888;">库存:' + item.stock + '</span>' +
+                '<span class="sell-price">卖:' + formatMoney(effectiveSell) + '</span>' +
+            '</div>' +
+            '<div class="item-controls">' +
+                '<input type="number" id="buy_' + name + '" min="1" max="' + item.stock + '" value="1">' +
+                '<button onclick="buyItem(\'' + name + '\')">买入</button>' +
+            '</div>';
+        list.appendChild(div);
+    }
+}
+
+function toggleMarket() {
+    gameState.marketVisible = !gameState.marketVisible;
+    var s = document.getElementById('marketSection');
+    if (gameState.marketVisible) { s.classList.remove('hidden'); renderMarket(); }
+    else s.classList.add('hidden');
+}
+
+function buyItem(name) {
+    var qty = parseInt(document.getElementById('buy_' + name).value);
+    var item = cityMarkets[gameState.location][name];
+    var bargainStacks = skillCount('bargain');
+    var cost = Math.ceil(item.buy * qty * Math.max(0.01, 1 - 0.05 * bargainStacks) * 100) / 100;
+    // NPC临时折扣
+    if (gameState.tempBuyDiscount > 0) { cost = Math.ceil(cost * (1 - gameState.tempBuyDiscount) * 100) / 100; gameState.tempBuyDiscount = 0; }
+    if (qty <= 0 || qty > item.stock) { addLog('无效数量', 'negative'); return; }
+    if (gameState.money < cost) { addLog('资金不足', 'negative'); return; }
+    gameState.money -= cost;
+    gameState.inventory[name] = (gameState.inventory[name] || 0) + qty;
+    item.stock -= qty;
+    adjustMarketPrice(name, 'buy');
+    gameState.stats.trades++;
+    gameState.stats.totalSpent = (gameState.stats.totalSpent||0) + cost;
+    addLog('买入 ' + name + ' ×' + qty + ' -' + formatMoney(cost) + 'U', 'positive');
+    showFloatText('-' + formatMoney(cost), '#ff6666');
+    updateUI(); renderInventory(); renderMarket(); checkAchievements();
+}
+
+// ==================== 背包 ====================
+function renderInventory() {
+    var list = document.getElementById('inventoryList');
+    if (!list) return;
+    list.innerHTML = '';
+    var has = false;
+    for (var name in gameState.inventory) {
+        var qty = gameState.inventory[name];
+        if (qty > 0) {
+            has = true;
+            var item = (cityMarkets[gameState.location] && cityMarkets[gameState.location][name]) || baseItems[name];
+            var div = document.createElement('div');
+            div.className = 'inv-item' + (item && item.illegal ? ' illegal' : '');
+            div.innerHTML =
+                '<div style="font-weight:bold;">' + name + '</div>' +
+                '<div class="inv-qty">' + qty + '</div>' +
+                '<div class="inv-actions">' +
+                    '<button onclick="openSell(\'' + name + '\')">售</button>' +
+                    (baseItems[name] && baseItems[name].use ? '<button onclick="useItem(\'' + name + '\')">用</button>' : '') +
+                '</div>';
+            list.appendChild(div);
+        }
+    }
+    if (!has) list.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;padding:10px;">背包空空</div>';
+}
+
+function useItem(name) {
+    if (!gameState.inventory[name] || gameState.inventory[name] <= 0) { addLog('没有该物品','negative'); return; }
+    var def = baseItems[name];
+    if (!def || !def.use) { addLog('该物品无法使用','negative'); return; }
+    def.use();
+    gameState.inventory[name]--;
+    if (gameState.inventory[name] <= 0) delete gameState.inventory[name];
+    updateUI(); renderInventory();
+}
+
+function openSell(name) {
+    currentSellItem = name;
+    negotiateBonus = 0;
+    document.getElementById('negotiateResult').textContent = '';
+    var qty = gameState.inventory[name];
+    var market = cityMarkets[gameState.location][name];
+    if (!market) { addLog('当前城市无此物品市场', 'negative'); return; }
+    var bargainStacks = skillCount('bargain');
+    var price = Math.floor(market.sell * (1 + 0.05 * bargainStacks) * 100) / 100;
+    document.getElementById('sellInfo').innerHTML =
+        '出售: <b>' + name + '</b><br>' +
+        '单价: ' + formatMoney(price) + 'U' + (bargainStacks>0?' <span style="color:#66bb6a;">(议价+' + (bargainStacks*5) + '%)</span>':'') + '<br>' +
+        '拥有: ' + qty + ' 件';
+    document.getElementById('sellQuantity').value = qty;
+    document.getElementById('sellQuantity').max   = qty;
+    openModal('sellModal');
+}
+
+function negotiateSell() {
+    if (!currentSellItem) return;
+    if (gameState.energy < 5) { addLog('体力不足（需5体力）', 'negative'); return; }
+    gameState.energy -= 5;
+    var roll = Math.random();
+    if (roll < 0.6) {
+        var bonus = 0.1 + Math.random() * 0.2;
+        negotiateBonus = bonus;
+        gameState.stats.negotiateSuccess++;
+        document.getElementById('negotiateResult').textContent = '✅ 谈判成功！售价提升 ' + Math.round(bonus*100) + '%';
+        addLog('谈判成功，售价+' + Math.round(bonus*100) + '%', 'positive');
+        checkAchievements();
+    } else {
+        negotiateBonus = 0;
+        document.getElementById('negotiateResult').textContent = '❌ 谈判失败，对方不接受';
+        addLog('谈判失败', 'neutral');
+    }
+    updateUI();
+}
+
+function confirmSell() {
+    if (!currentSellItem) return;
+    var qty = parseInt(document.getElementById('sellQuantity').value);
+    if (!qty || qty <= 0 || qty > gameState.inventory[currentSellItem]) return;
+    var market = cityMarkets[gameState.location][currentSellItem];
+    if (!market) return;
+    var bargainStacks = skillCount('bargain');
+    var price = Math.floor(market.sell * (1 + 0.05 * bargainStacks) * (1 + negotiateBonus) * 100) / 100;
+    var income = price * qty;
+    gameState.inventory[currentSellItem] -= qty;
+    if (gameState.inventory[currentSellItem] <= 0) delete gameState.inventory[currentSellItem];
+    gameState.money += income;
+    adjustMarketPrice(currentSellItem, 'sell');
+    gameState.stats.trades++;
+    gameState.stats.totalEarned = (gameState.stats.totalEarned||0) + income;
+    addLog('出售 ' + currentSellItem + ' ×' + qty + ' +' + formatMoney(income) + 'U', 'positive');
+    showFloatText('+' + formatMoney(income) + 'U', '#66bb6a');
+    negotiateBonus = 0;
+    updateUI(); renderInventory(); renderMarket(); checkAchievements();
+    closeModal('sellModal');
+}
+
+// ==================== 商店 ====================
+function openShop() {
+    var list = document.getElementById('shopList');
+    list.innerHTML = '';
+    shopItems.forEach(function(item, i) {
+        var div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = '<div>' + item.name + '</div><div style="color:#ffd700;">' + formatMoney(item.price) + 'U</div>' +
+            '<button onclick="buyShop(' + i + ')">购买</button>';
+        list.appendChild(div);
+    });
+    openModal('shopModal');
+}
+
+function buyShop(idx) {
+    var item = shopItems[idx];
+    if (gameState.money >= item.price) {
+        gameState.money -= item.price; item.effect();
+        addLog('购买 ' + item.name, 'positive');
+        showFloatText('-' + formatMoney(item.price), '#ff6666');
+        updateUI();
+    } else addLog('资金不足', 'negative');
+}
+
+// ==================== 旅行 ====================
+function openTravel() {
+    if (gameState.energy < 1) { addLog('体力不足', 'negative'); return; }
+    var list = document.getElementById('travelList');
+    list.innerHTML = '';
+    for (var city in cities) {
+        if (city !== gameState.location) {
+            var btn = document.createElement('button');
+            btn.className = 'city-btn';
+            btn.textContent = city;
+            btn.onclick = (function(c) { return function() { travelTo(c); }; })(city);
+            list.appendChild(btn);
+        }
+    }
+    openModal('travelModal');
+}
+
+function travelTo(city) {
+    closeModal('travelModal');
+    // 边境检查（30%概率）
+    if (Math.random() < 0.3) {
+        showBorderCheck(city);
+    } else {
+        doTravel(city);
+    }
+}
+
+function doTravel(city) {
+    gameState.energy--;
+    gameState.location = city;
+    if (!gameState.stats.citiesVisited) gameState.stats.citiesVisited = {};
+    gameState.stats.citiesVisited[city] = true;
+    cityMarkets[city] = generateMarketData();
+    renderMarket();
+    addLog('抵达 ' + city + '，市场已刷新', 'neutral');
+    updateUI(); checkAchievements();
+}
+
+// ==================== 边境检查小游戏 ====================
+var _pendingTravelCity = null;
+
+function showBorderCheck(city) {
+    _pendingTravelCity = city;
+    var questions = [
+        {
+            q: '🚔 边境警察拦住你！你包里有走私物品，怎么办？',
+            hint: '选择正确应对方式',
+            choices: [
+                { text: '💰 塞200U贿赂', outcome: function(){ gameState.money=Math.max(0,gameState.money-200); addLog('花200U打点警察，顺利通过','neutral'); doTravel(_pendingTravelCity); return true; }},
+                { text: '😇 假装是游客', outcome: function(){ if(Math.random()<0.5){addLog('成功蒙混过关！','positive'); doTravel(_pendingTravelCity); return true;}else{gameState.money=Math.max(0,gameState.money-1000); addLog('穿帮了，被罚1000U','negative'); doTravel(_pendingTravelCity); return true;} }},
+                { text: '🏃 拔腿就跑',   outcome: function(){ gameState.energy=Math.max(0,gameState.energy-10); addLog('逃跑成功！但体力-10','neutral'); doTravel(_pendingTravelCity); return true; }},
+                { text: '🪖 亮出军队',   outcome: function(){ if(gameState.army>=10){addLog('军队护送，警察敬礼放行','positive'); doTravel(_pendingTravelCity);}else{gameState.money=Math.max(0,gameState.money-500); addLog('没啥军队，被罚500U','negative'); doTravel(_pendingTravelCity);} return true; }},
+            ]
+        },
+        {
+            q: '🛃 海关要求你回答问题：你携带的铜矿是否申报？',
+            hint: '诚实或撒谎？',
+            choices: [
+                { text: '✅ 如实申报', outcome: function(){ gameState.money=Math.max(0,gameState.money-300); addLog('缴纳关税300U，顺利通关','neutral'); doTravel(_pendingTravelCity); return true; }},
+                { text: '❌ 否认携带', outcome: function(){ if(Math.random()<0.6){addLog('侥幸通关！','positive'); doTravel(_pendingTravelCity);}else{gameState.money=Math.max(0,gameState.money-2000); addLog('被查出，罚款2000U','negative'); doTravel(_pendingTravelCity);} return true; }},
+                { text: '🎭 行贿检查员',outcome: function(){ if(gameState.money>=500){gameState.money-=500; addLog('500U解决麻烦','neutral'); doTravel(_pendingTravelCity);}else{addLog('没钱行贿，被拦下','negative');} return true; }},
+                { text: '📋 出示证件', outcome: function(){ if(gameState.factionRep.gov>40){addLog('政府背景，直接放行','positive'); doTravel(_pendingTravelCity);}else{gameState.money=Math.max(0,gameState.money-800); addLog('证件不够用，罚800U','negative'); doTravel(_pendingTravelCity);} return true; }},
+            ]
+        },
+    ];
+    var q = questions[Math.floor(Math.random() * questions.length)];
+    document.getElementById('borderQuestion').textContent = q.q;
+    document.getElementById('borderHint').textContent = q.hint;
+    var choicesEl = document.getElementById('borderChoices');
+    choicesEl.innerHTML = '';
+    q.choices.forEach(function(c) {
+        var div = document.createElement('div');
+        div.className = 'border-choice';
+        div.textContent = c.text;
+        div.onclick = function() { closeModal('borderModal'); c.outcome(); };
+        choicesEl.appendChild(div);
+    });
+    openModal('borderModal');
+}
+
+// ==================== BTC ====================
+function openBTC() { document.getElementById('btcAmount').value=''; openModal('btcModal'); }
+function tradeBTC(type) {
+    var amount = parseFloat(document.getElementById('btcAmount').value);
+    if (!amount || amount <= 0) { addLog('无效金额', 'negative'); return; }
+    if (amount > gameState.money) { addLog('资金不足', 'negative'); return; }
+    var leverage = parseInt(document.getElementById('btcLeverage').value);
+    gameState.money -= amount;
+    var change = (Math.random() * 0.4) - 0.2;
+    var direction = (type === 'long') ? 1 : -1;
+    var profit = amount * change * leverage * direction;
+    var totalReturn = Math.max(0, amount + profit);
+    if (totalReturn === 0) profit = -amount;
+    gameState.money += totalReturn;
+    if (profit > gameState.stats.maxBtcProfit) gameState.stats.maxBtcProfit = profit;
+    var txt = (profit <= -amount*0.99 ? '💥爆仓' : profit > 0 ? '✅盈利' : '❌亏损');
+    addLog('BTC ' + txt + ' | ' + leverage + '倍 | 投入' + formatMoney(amount) + ' | 收益:' + (profit>=0?'+':'') + formatMoney(profit), profit>0?'positive':'negative');
+    if (profit > 0) { showFloatText('+'+formatMoney(profit), '#ffd700'); flashScreen('positive'); }
+    else { flashScreen('negative'); }
+    checkAchievements();
+    closeModal('btcModal'); updateUI();
+}
+
+// ==================== 彩票 ====================
+function openLottery() { openModal('lotteryModal'); }
+function playLottery() {
+    if (gameState.money < 1000) { addLog('资金不足', 'negative'); return; }
+    gameState.money -= 1000;
+    var rand = Math.random(), prize = 0, txt = '', type = 'negative';
+    if (rand < 0.0001)       { prize = 1500000000; txt = '🏆特等奖15亿！'; type='special'; }
+    else if (rand < 0.0011)  { prize = 15000000;   txt = '🥇一等奖1500万！'; type='positive'; }
+    else if (rand < 0.0111)  { prize = 5000000;    txt = '🥈二等奖500万！'; type='positive'; }
+    else if (rand < 0.0411)  { prize = 500000;     txt = '🥉三等奖50万！'; type='positive'; }
+    else if (rand < 0.5411)  { prize = 0; txt = '💨未中奖'; type='negative'; }
+    else                     { prize = Math.floor(Math.random()*1000); txt = '安慰奖'+formatMoney(prize); type='neutral'; }
+    gameState.money += prize;
+    if (prize > 0) { gameState.stats.lotteryWins = (gameState.stats.lotteryWins||0)+1; showFloatText('+'+formatMoney(prize), '#ffd700'); flashScreen('special'); }
+    addLog('彩票: ' + txt, type);
+    checkAchievements(); updateUI();
+}
+
+// ==================== 军事 ====================
+function openMilitary() {
+    var span = document.getElementById('militaryArmy');
+    if (span) span.textContent = gameState.army;
+    var div = document.getElementById('militaryActions');
+    div.innerHTML = '';
+    var ops = [
+        { name:'边境巡逻', cost:5,   reward:'+1000U',              effect: function(){ gameState.money+=1000; addLog('巡逻队带回1000U','positive'); }},
+        { name:'清剿土匪', cost:20,  reward:'+5000U+物品',         effect: function(){ gameState.money+=5000; var items=Object.keys(baseItems); var r=items[Math.floor(Math.random()*items.length)]; gameState.inventory[r]=(gameState.inventory[r]||0)+5; addLog('清剿成功，获得5件'+r,'positive'); }},
+        { name:'夺取据点', cost:50,  reward:'+20000U+大量物品',    effect: function(){ gameState.money+=20000; for(var i=0;i<3;i++){var items=Object.keys(baseItems);var r=items[Math.floor(Math.random()*items.length)]; gameState.inventory[r]=(gameState.inventory[r]||0)+10;} addLog('夺取据点，缴获大量物资','positive'); }},
+        { name:'军火交易', cost:100, reward:'+100000U+军队+10',    effect: function(){ gameState.money+=100000; gameState.army+=10; addLog('军火交易成功','positive'); }},
+    ];
+    ops.forEach(function(op) {
+        var btn = document.createElement('button');
+        btn.className = 'army';
+        var armyTrainStacks = skillCount('army_train');
+        var cost = Math.max(1, Math.floor(op.cost * Math.pow(0.9, armyTrainStacks)));
+        btn.textContent = op.name + '（消耗' + cost + '人）';
+        btn.onclick = (function(o, c) { return function() {
+            if (gameState.army >= c) { gameState.army -= c; o.effect(); updateUI(); closeModal('militaryModal'); }
+            else addLog('军队不足！', 'negative');
+        }; })(op, cost);
+        div.appendChild(btn);
+    });
+    openModal('militaryModal');
+}
+
+// ==================== 投资 ====================
+function openInvestment() {
+    var list = document.getElementById('investmentList');
+    list.innerHTML = '';
+    investments.forEach(function(inv, i) {
+        var holdings = gameState.investments[inv.name] || 0;
+        var div = document.createElement('div');
+        div.className = 'investment-item';
+        div.innerHTML =
+            '<div class="investment-header"><span>' + inv.name + '</span><span>' + inv.sector + '</span></div>' +
+            '<div class="investment-detail"><span>单价:' + inv.price + 'U</span><span>持有:' + holdings + '份</span></div>' +
+            '<div class="investment-detail"><span>市值:' + formatMoney(holdings*inv.price) + 'U</span><span style="color:#66bb6a;">波动:±' + (inv.volatility*100).toFixed(0) + '%</span></div>' +
+            '<div class="investment-controls"><input type="number" id="inv_'+i+'" min="1" value="1" style="width:50px;"><button onclick="buyInvestment('+i+')">买入</button></div>';
+        list.appendChild(div);
+    });
+    openModal('investmentModal');
+}
+
+function buyInvestment(index) {
+    var inv = investments[index];
+    var qty = parseInt(document.getElementById('inv_' + index).value);
+    if (isNaN(qty) || qty <= 0) { addLog('无效数量', 'negative'); return; }
+    var cost = inv.price * qty;
+    if (gameState.money < cost) { addLog('资金不足', 'negative'); return; }
+    gameState.money -= cost;
+    gameState.investments[inv.name] = (gameState.investments[inv.name] || 0) + qty;
+    addLog('买入 ' + qty + '份 ' + inv.name + ' -' + formatMoney(cost) + 'U', 'positive');
+    showFloatText('-'+formatMoney(cost), '#ff6666');
+    updateUI(); checkAchievements(); closeModal('investmentModal');
+}
+
+// ==================== 技能树 ====================
+function openSkills() {
+    var comboEl = document.getElementById('skillComboHint');
+    var bargain = skillCount('bargain'), regen = skillCount('energy_regen'), army = skillCount('army_train');
+    var combo = [];
+    if (bargain >= 3 && regen >= 3) combo.push('✨ 议价×3+体力×3 = 谈判成功率+20%');
+    if (bargain >= 5) combo.push('💎 议价×5 = 买卖差价无敌');
+    if (regen >= 5 && army >= 3) combo.push('🔥 体力×5+军队×3 = 每步额外+3体力');
+    comboEl.textContent = combo.length ? '🔗 技能组合：' + combo.join(' | ') : '';
+
+    var list = document.getElementById('skillsList');
+    list.innerHTML = '';
+    skills.forEach(function(s, i) {
+        var count = skillCount(s.id);
+        var div = document.createElement('div');
+        div.className = 'skill-item';
+        div.innerHTML =
+            '<div><b>' + s.name + '</b> (' + formatMoney(s.cost) + 'U)</div>' +
+            '<div style="font-size:9px;color:#aaa;">' + s.desc + '</div>' +
+            '<div>' + (count>0 ? '<span style="color:#ffd700;">叠加 ×' + count + '</span>' : '<span style="color:#888;">未解锁</span>') + '</div>' +
+            '<button onclick="buySkill('+i+')">解锁/叠加</button>';
+        list.appendChild(div);
+    });
+    openModal('skillsModal');
+}
+
+function buySkill(idx) {
+    var s = skills[idx];
+    if (gameState.money >= s.cost) {
+        gameState.money -= s.cost; s.effect();
+        addLog('解锁/叠加技能：' + s.name + ' ×' + skillCount(s.id), 'positive');
+        if (s.id === 'energy_regen') { stopEnergyTimer(); startEnergyTimer(); }
+        updateUI(); checkAchievements(); closeModal('skillsModal');
+    } else addLog('资金不足', 'negative');
+}
+
+// ==================== 银行 ====================
+function openBank() {
+    document.getElementById('bankInfo').innerHTML = '当前贷款: ' + formatMoney(gameState.loan) + ' U<br>利率: 1% / 步<br>最高贷款: 10,000 U';
+    openModal('bankModal');
+}
+function bankLoan() {
+    var amount = parseInt(prompt('输入贷款金额（最多10000U）', '1000'));
+    if (amount > 0 && amount <= 10000) {
+        gameState.money += amount; gameState.loan += amount;
+        addLog('贷款 +' + formatMoney(amount) + 'U', 'positive');
+        updateUI(); closeModal('bankModal');
+    }
+}
+function bankRepay() {
+    var amount = parseInt(prompt('输入还款金额', Math.min(gameState.loan, gameState.money)));
+    if (amount > 0 && amount <= gameState.money && amount <= gameState.loan) {
+        gameState.money -= amount; gameState.loan -= amount;
+        addLog('还款 -' + formatMoney(amount) + 'U', 'positive');
+        updateUI(); closeModal('bankModal');
+    }
+}
+
+// ==================== 势力 ====================
+function openFactions() {
+    document.getElementById('factionsInfo').innerHTML =
+        '🏛️ 政府军好感: ' + gameState.factionRep.gov + '<br>' +
+        '⚔️ 游击队好感: ' + gameState.factionRep.rebel + '<br><br>' +
+        '<span style="color:#888;font-size:10px;">好感度影响缅甸事件结果</span>';
+    openModal('factionsModal');
+}
+
+// ==================== 任务 ====================
+function openMissions() {
+    var html = '';
+    missions.forEach(function(m, i) {
+        var done = gameState.missionProgress >= i+1;
+        html += '<div style="padding:6px;border-bottom:1px solid #333;">' +
+            (done ? '✅ ' : '⏳ ') + m.desc + '<br>' +
+            '<span style="color:#ffd700;font-size:10px;">奖励: ' + m.reward + '</span></div>';
+    });
+    document.getElementById('missionsInfo').innerHTML = html;
+    openModal('missionsModal');
+}
+
+// ==================== NPC ====================
+function openNPC() {
+    var list = document.getElementById('npcList');
+    list.innerHTML = '';
+    npcs.forEach(function(npc) {
+        var rel = gameState.npcRel[npc.id] || 0;
+        var div = document.createElement('div');
+        div.className = 'npc-card';
+        div.innerHTML =
+            '<div class="npc-header">' +
+                '<span class="npc-name">' + npc.avatar + ' ' + npc.name + '</span>' +
+                '<span class="npc-city">📍' + npc.city + '</span>' +
+            '</div>' +
+            '<div class="npc-desc">' + npc.desc + '</div>' +
+            '<div class="rel-bar"><div class="rel-fill" style="width:' + Math.min(100,rel) + '%;"></div></div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px;">' +
+                '<span style="color:#888;">好感度: <span style="color:#ffd700;">' + rel + '/100</span></span>' +
+                '<span style="color:#888;">费用: ' + formatMoney(npc.cost) + 'U</span>' +
+            '</div>' +
+            '<button class="npc-btn" onclick="interactNPC(\'' + npc.id + '\')">' +
+                (gameState.location === npc.city ? '✅ 互动' : '⚠️ 需在' + npc.city) +
+            '</button>';
+        list.appendChild(div);
+    });
+    openModal('npcModal');
+}
+
+function interactNPC(npcId) {
+    var npc = npcs.find(function(n){ return n.id===npcId; });
+    if (!npc) return;
+    if (gameState.location !== npc.city) { addLog('需要前往' + npc.city + '才能与' + npc.name + '互动', 'neutral'); return; }
+    if (gameState.money < npc.cost && gameState.npcRel[npcId] < 60) { addLog('资金不足', 'negative'); return; }
+    npc.effect();
+    updateUI(); renderInventory(); closeModal('npcModal'); checkAchievements();
+}
+
+// ==================== 成就 ====================
+function openAchievements() {
+    var list = document.getElementById('achievementList');
+    list.innerHTML = '';
+    var unlocked = 0;
+    achievementDefs.forEach(function(def) {
+        var done = gameState.achievements.includes(def.id);
+        if (done) unlocked++;
+        var div = document.createElement('div');
+        div.className = 'ach-card' + (done ? ' unlocked' : '');
+        div.innerHTML =
+            '<div class="ach-icon">' + (done ? def.icon : '🔒') + '</div>' +
+            '<div class="ach-nm">' + def.name + '</div>' +
+            '<div class="ach-dc">' + def.desc + '</div>';
+        list.appendChild(div);
+    });
+    document.getElementById('achProgress').textContent = '已解锁 ' + unlocked + '/' + achievementDefs.length;
+    openModal('achievementsModal');
+}
+
+// ==================== 情报市场 ====================
+function openIntel() {
+    var list = document.getElementById('intelList');
+    list.innerHTML = '';
+    for (var city in cities) {
+        if (city === gameState.location) continue;
+        var div = document.createElement('div');
+        div.className = 'intel-item';
+        var intelCity = city;
+        div.innerHTML =
+            '<div class="intel-city">📍 ' + city + ' — ' + cities[city].description + '</div>' +
+            '<div class="intel-desc">花3000U购买该城市最高价格情报</div>' +
+            '<button onclick="buyIntel(\'' + intelCity + '\')" style="font-size:10px;">购买 3000U</button>';
+        list.appendChild(div);
+    }
+    openModal('intelModal');
+}
+
+function buyIntel(city) {
+    if (gameState.money < 3000) { addLog('资金不足', 'negative'); return; }
+    gameState.money -= 3000;
+    var market = cityMarkets[city];
+    if (!market) { addLog('暂无该城市情报', 'neutral'); return; }
+    var items = Object.keys(market);
+    var best = items.reduce(function(a, b){ return market[a].sell > market[b].sell ? a : b; });
+    addLog('🔍 情报：' + city + ' 的 ' + best + ' 卖出价高达 ' + formatMoney(market[best].sell) + 'U！', 'special');
+    showFloatText('情报获取！', '#ce93d8');
+    updateUI(); closeModal('intelModal');
+}
+
+// ==================== 统计 ====================
+function openStats() {
+    var st = gameState.stats;
+    var list = document.getElementById('statsList');
+    var data = [
+        ['总行动次数', st.steps || 0],
+        ['总交易次数', st.trades || 0],
+        ['彩票获奖次数', st.lotteryWins || 0],
+        ['事件链完成', st.chainCompleted || 0],
+        ['谈判成功', st.negotiateSuccess || 0],
+        ['濒死次数', st.nearDeathCount || 0],
+        ['总赚取', formatMoney(st.totalEarned || 0) + 'U'],
+        ['总花费', formatMoney(st.totalSpent || 0) + 'U'],
+        ['投资总市值', formatMoney(getTotalInvestValue()) + 'U'],
+        ['BTC最大盈利', formatMoney(st.maxBtcProfit || 0) + 'U'],
+    ];
+    list.innerHTML = data.map(function(row){
+        return '<div class="stats-row"><div class="label">' + row[0] + '</div><div class="val">' + row[1] + '</div></div>';
+    }).join('');
+    openModal('statsModal');
+}
+
+// ==================== 随机旅行 ====================
+function randomTravel() {
+    var names = Object.keys(cities);
+    gameState.location = names[Math.floor(Math.random() * names.length)];
+    if (!gameState.stats.citiesVisited) gameState.stats.citiesVisited = {};
+    gameState.stats.citiesVisited[gameState.location] = true;
+    cityMarkets[gameState.location] = generateMarketData();
+    updateUI(); renderMarket();
+}
+
+// ==================== 日志 ====================
+function addLog(text, type) {
+    var log = document.getElementById('eventLog');
+    var item = document.createElement('div');
+    item.className = 'event-item ' + (type || 'neutral');
+    item.textContent = text;
+    log.insertBefore(item, log.firstChild);
+    while (log.children.length > 20) log.removeChild(log.lastChild);
+}
+
+// ==================== 模态框 ====================
+function openModal(id)  { var m=document.getElementById(id); if(m) m.classList.add('active'); }
+function closeModal(id) { var m=document.getElementById(id); if(m) m.classList.remove('active'); }
+document.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); };
+
+// ==================== 存档 ====================
+function autoSave() {
+    try {
+        localStorage.setItem('smuggle_save_v2', JSON.stringify({ gameState: gameState, cityMarkets: cityMarkets }));
+        addLog('自动保存完成', 'system');
+    } catch(e) {}
+}
+function loadAutoSave() {
+    try {
+        var saved = localStorage.getItem('smuggle_save_v2') || localStorage.getItem('smuggle_save');
+        if (saved) {
+            var obj = JSON.parse(saved);
+            if (obj.gameState)   { Object.assign(gameState, obj.gameState); }
+            if (obj.cityMarkets) { Object.assign(cityMarkets, obj.cityMarkets); }
+        }
+    } catch(e) {}
+}
+function exportSave() {
+    stopEnergyTimer();
+    var s = btoa(unescape(encodeURIComponent(JSON.stringify({ gameState: gameState, cityMarkets: cityMarkets, timestamp: new Date().toLocaleString() }))));
+    document.getElementById('saveData').value = s;
+    document.getElementById('saveContent').classList.remove('hidden');
+    document.getElementById('importContent').classList.add('hidden');
+    document.getElementById('copyBtn').classList.remove('hidden');
+    document.getElementById('importBtn').classList.add('hidden');
+    openModal('saveModal');
+    startEnergyTimer();
+    addLog('存档已生成！', 'system');
+}
+function copySave() {
+    var ta = document.getElementById('saveData');
+    ta.select();
+    try { document.execCommand('copy'); addLog('已复制存档代码', 'positive'); alert('复制成功！'); } catch(e) { alert('请手动复制'); }
+}
+function importSave() {
+    document.getElementById('saveContent').classList.add('hidden');
+    document.getElementById('importContent').classList.remove('hidden');
+    document.getElementById('copyBtn').classList.add('hidden');
+    document.getElementById('importBtn').classList.remove('hidden');
+    openModal('saveModal');
+}
+function doImport() {
+    var code = document.getElementById('importData').value.trim();
+    if (!code) { alert('请输入存档代码'); return; }
+    try {
+        var obj = JSON.parse(decodeURIComponent(escape(atob(code))));
+        stopEnergyTimer();
+        initData();
+        for (var c in cities) cityMarkets[c] = generateMarketData();
+        if (obj.gameState) Object.assign(gameState, obj.gameState);
+        if (obj.cityMarkets) Object.assign(cityMarkets, obj.cityMarkets);
+        updateUI(); renderMarket(); renderInventory(); startEnergyTimer();
+        _prevMoney = gameState.money;
+        closeModal('saveModal');
+        addLog('存档导入成功！', 'positive');
+    } catch(e) { alert('存档无效：' + e.message); }
+}
+function resetGame() {
+    if (!confirm('确定重置？所有进度将丢失！')) return;
+    stopEnergyTimer(); clearInterval(autoSaveTimer);
+    try { localStorage.removeItem('smuggle_save_v2'); } catch(e) {}
+    initData();
+    initAchievements();
+    initNPCs();
+    for (var c in cities) cityMarkets[c] = generateMarketData();
+    _prevMoney = 1000;
+    updateUI(); renderMarket(); renderInventory();
+    startEnergyTimer();
+    autoSaveTimer = setInterval(autoSave, 300000);
+    addLog('游戏已重置！', 'system');
+}
+function showGuide() {
+    if (gameState.firstTime) {
+        document.getElementById('guideOverlay').style.display = 'flex';
+        gameState.firstTime = false;
+    }
+}
+function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; }
+
+// ==================== 启动 ====================
+function init() {
+    initData();
+    initAchievements();
+    initNPCs();
+    for (var c in cities) cityMarkets[c] = generateMarketData();
+    loadAutoSave();
+    _prevMoney = gameState.money;
+    updateUI(); renderMarket(); renderInventory();
+    startEnergyTimer();
+    autoSaveTimer = setInterval(autoSave, 300000);
+    showGuide();
+    addLog('🚀 豪华版初始化完成！', 'system');
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
+</body>
+</html>
